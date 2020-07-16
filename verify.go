@@ -13,26 +13,26 @@ import (
 // Verify is a wrapper around VerifyWithChain() that initializes an empty
 // trust store, effectively disabling certificate verification when validating
 // a signature.
-func (p7 *PKCS7) Verify() (err error) {
-	return p7.VerifyWithChain(nil)
+func (p7 *PKCS7) Verify(expectedHash []byte) (err error) {
+	return p7.VerifyWithChain(expectedHash, nil)
 }
 
 // VerifyWithChain checks the signatures of a PKCS7 object.
 // If truststore is not nil, it also verifies the chain of trust of the end-entity
 // signer cert to one of the root in the truststore.
-func (p7 *PKCS7) VerifyWithChain(truststore *x509.CertPool) (err error) {
+func (p7 *PKCS7) VerifyWithChain(expectedHash []byte, truststore *x509.CertPool) (err error) {
 	if len(p7.Signers) == 0 {
 		return errors.New("pkcs7: Message has no signers")
 	}
 	for _, signer := range p7.Signers {
-		if err := verifySignature(p7, signer, truststore); err != nil {
+		if err := verifySignature(p7, expectedHash, signer, truststore); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func verifySignature(p7 *PKCS7, signer signerInfo, truststore *x509.CertPool) (err error) {
+func verifySignature(p7 *PKCS7, expectedHash []byte, signer signerInfo, truststore *x509.CertPool) (err error) {
 	signedData := p7.Content
 	ee := getCertFromCertsByIssuerAndSerial(p7.Certificates, signer.IssuerAndSerialNumber)
 	if ee == nil {
@@ -46,17 +46,10 @@ func verifySignature(p7 *PKCS7, signer signerInfo, truststore *x509.CertPool) (e
 		if err != nil {
 			return err
 		}
-		hash, err := getHashForOID(signer.DigestAlgorithm.Algorithm)
-		if err != nil {
-			return err
-		}
-		h := hash.New()
-		h.Write(p7.Content)
-		computed := h.Sum(nil)
-		if subtle.ConstantTimeCompare(digest, computed) != 1 {
+		if subtle.ConstantTimeCompare(digest, expectedHash) != 1 {
 			return &MessageDigestMismatchError{
 				ExpectedDigest: digest,
-				ActualDigest:   computed,
+				ActualDigest:   expectedHash,
 			}
 		}
 		signedData, err = marshalAttributes(signer.AuthenticatedAttributes)
