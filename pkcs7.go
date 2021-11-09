@@ -208,19 +208,19 @@ func parseEnvelopedData(data []byte) (*PKCS7, error) {
 // Verify checks the signatures of a PKCS7 object
 // WARNING: Verify does not check signing time or verify certificate chains at
 // this time.
-func (p7 *PKCS7) Verify() (err error) {
+func (p7 *PKCS7) Verify(expectedHash []byte) (err error) {
 	if len(p7.Signers) == 0 {
 		return errors.New("pkcs7: Message has no signers")
 	}
 	for _, signer := range p7.Signers {
-		if err := verifySignature(p7, signer); err != nil {
+		if err := verifySignature(p7, expectedHash, signer); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func verifySignature(p7 *PKCS7, signer signerInfo) error {
+func verifySignature(p7 *PKCS7, expectedHash []byte, signer signerInfo) error {
 	signedData := p7.Content
 	hash, err := getHashForOID(signer.DigestAlgorithm.Algorithm)
 	if err != nil {
@@ -233,13 +233,11 @@ func verifySignature(p7 *PKCS7, signer signerInfo) error {
 		if err != nil {
 			return err
 		}
-		h := hash.New()
-		h.Write(p7.Content)
-		computed := h.Sum(nil)
-		if !hmac.Equal(digest, computed) {
+
+		if !hmac.Equal(digest, expectedHash) {
 			return &MessageDigestMismatchError{
 				ExpectedDigest: digest,
-				ActualDigest:   computed,
+				ActualDigest:   expectedHash,
 			}
 		}
 		// TODO(fullsailor): Optionally verify certificate chain
@@ -301,8 +299,8 @@ func getHashForOID(oid asn1.ObjectIdentifier) (crypto.Hash, error) {
 	switch {
 	case oid.Equal(oidDigestAlgorithmSHA1):
 		return crypto.SHA1, nil
-  case oid.Equal(oidSHA256):
-    return crypto.SHA256, nil
+	case oid.Equal(oidSHA256):
+		return crypto.SHA256, nil
 	}
 	return crypto.Hash(0), ErrUnsupportedAlgorithm
 }
