@@ -26,7 +26,7 @@ func TestVerify(t *testing.T) {
 		t.Errorf("Parse encountered unexpected error: %v", err)
 	}
 
-	if err := p7.Verify(); err != nil {
+	if err := p7.Verify(nil); err != nil {
 		t.Errorf("Verify failed with error: %v", err)
 	}
 	expected := []byte("We the People")
@@ -43,7 +43,7 @@ func TestVerifyEC2(t *testing.T) {
 		t.Errorf("Parse encountered unexpected error: %v", err)
 	}
 	p7.Certificates = []*x509.Certificate{fixture.Certificate}
-	if err := p7.Verify(); err != nil {
+	if err := p7.Verify(nil); err != nil {
 		t.Errorf("Verify failed with error: %v", err)
 	}
 }
@@ -54,7 +54,7 @@ func TestVerifyAppStore(t *testing.T) {
 	if err != nil {
 		t.Errorf("Parse encountered unexpected error: %v", err)
 	}
-	if err := p7.Verify(); err != nil {
+	if err := p7.Verify(nil); err != nil {
 		t.Errorf("Verify failed with error: %v", err)
 	}
 }
@@ -147,7 +147,7 @@ func TestSign(t *testing.T) {
 		if bytes.Compare(content, p7.Content) != 0 {
 			t.Errorf("Our content was not in the parsed data:\n\tExpected: %s\n\tActual: %s", content, p7.Content)
 		}
-		if err := p7.Verify(); err != nil {
+		if err := p7.Verify(nil); err != nil {
 			t.Errorf("Cannot verify our signed data: %s", err)
 		}
 	}

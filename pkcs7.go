@@ -234,6 +234,11 @@ func verifySignature(p7 *PKCS7, expectedHash []byte, signer signerInfo) error {
 			return err
 		}
 
+		if expectedHash == nil {
+			h := hash.New()
+			h.Write(p7.Content)
+			expectedHash = h.Sum(nil)
+		}
 		if !hmac.Equal(digest, expectedHash) {
 			return &MessageDigestMismatchError{
 				ExpectedDigest: digest,
@@ -301,6 +306,10 @@ func getHashForOID(oid asn1.ObjectIdentifier) (crypto.Hash, error) {
 		return crypto.SHA1, nil
 	case oid.Equal(oidSHA256):
 		return crypto.SHA256, nil
+	case oid.Equal(oidSHA384):
+		return crypto.SHA384, nil
+	case oid.Equal(oidSHA512):
+		return crypto.SHA512, nil
 	}
 	return crypto.Hash(0), ErrUnsupportedAlgorithm
 }
@@ -881,7 +890,7 @@ func encryptDESCBC(content []byte) ([]byte, *encryptedContentInfo, error) {
 // value is EncryptionAlgorithmDESCBC. To use a different algorithm, change the
 // value before calling Encrypt(). For example:
 //
-//     ContentEncryptionAlgorithm = EncryptionAlgorithmAES128GCM
+//	ContentEncryptionAlgorithm = EncryptionAlgorithmAES128GCM
 //
 // TODO(fullsailor): Add support for encrypting content with other algorithms
 func Encrypt(content []byte, recipients []*x509.Certificate) ([]byte, error) {
