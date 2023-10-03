@@ -1,4 +1,4 @@
-module github.com/cloudtrust/pkcs7
+module github.com/cloudtrust/pkcs7/v2
 
 go 1.21.0
 
