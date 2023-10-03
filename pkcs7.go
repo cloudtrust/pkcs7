@@ -28,7 +28,7 @@ type PKCS7 struct {
 	Certificates []*x509.Certificate
 	CRLs         []pkix.CertificateList
 	Signers      []signerInfo
-	raw          interface{}
+	raw          any
 }
 
 type contentInfo struct {
@@ -506,7 +506,7 @@ func unpad(data []byte, blocklen int) ([]byte, error) {
 	return data[:len(data)-padlen], nil
 }
 
-func unmarshalAttribute(attrs []attribute, attributeType asn1.ObjectIdentifier, out interface{}) error {
+func unmarshalAttribute(attrs []attribute, attributeType asn1.ObjectIdentifier, out any) error {
 	for _, attr := range attrs {
 		if attr.Type.Equal(attributeType) {
 			_, err := asn1.Unmarshal(attr.Value.Bytes, out)
@@ -517,7 +517,7 @@ func unmarshalAttribute(attrs []attribute, attributeType asn1.ObjectIdentifier, 
 }
 
 // UnmarshalSignedAttribute decodes a single attribute from the signer info
-func (p7 *PKCS7) UnmarshalSignedAttribute(attributeType asn1.ObjectIdentifier, out interface{}) error {
+func (p7 *PKCS7) UnmarshalSignedAttribute(attributeType asn1.ObjectIdentifier, out any) error {
 	sd, ok := p7.raw.(signedData)
 	if !ok {
 		return errors.New("pkcs7: payload is not signedData content")
@@ -540,7 +540,7 @@ type SignedData struct {
 // `encoding/asn1`
 type Attribute struct {
 	Type  asn1.ObjectIdentifier
-	Value interface{}
+	Value any
 }
 
 // SignerInfoConfig are optional values to include when adding a signer
@@ -574,11 +574,11 @@ func NewSignedData(data []byte) (*SignedData, error) {
 
 type attributes struct {
 	types  []asn1.ObjectIdentifier
-	values []interface{}
+	values []any
 }
 
 // Add adds the attribute, maintaining insertion order
-func (attrs *attributes) Add(attrType asn1.ObjectIdentifier, value interface{}) {
+func (attrs *attributes) Add(attrType asn1.ObjectIdentifier, value any) {
 	attrs.types = append(attrs.types, attrType)
 	attrs.values = append(attrs.values, value)
 }
