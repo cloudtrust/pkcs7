@@ -11,7 +11,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
@@ -90,7 +89,7 @@ func TestDegenerateCertificate(t *testing.T) {
 
 // writes the cert to a temporary file and tests that openssl can read it.
 func testOpenSSLParse(t *testing.T, certBytes []byte) {
-	tmpCertFile, err := ioutil.TempFile("", "testCertificate")
+	tmpCertFile, err := os.CreateTemp("", "testCertificate")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +206,7 @@ func TestOpenSSLVerifyDetachedSignature(t *testing.T) {
 	}
 
 	// write the root cert to a temp file
-	tmpRootCertFile, err := ioutil.TempFile("", "pkcs7TestRootCA")
+	tmpRootCertFile, err := os.CreateTemp("", "pkcs7TestRootCA")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,20 +219,20 @@ func TestOpenSSLVerifyDetachedSignature(t *testing.T) {
 	fd.Close()
 
 	// write the signature to a temp file
-	tmpSignatureFile, err := ioutil.TempFile("", "pkcs7Signature")
+	tmpSignatureFile, err := os.CreateTemp("", "pkcs7Signature")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpSignatureFile.Name()) // clean up
-	ioutil.WriteFile(tmpSignatureFile.Name(), signed, 0755)
+	os.WriteFile(tmpSignatureFile.Name(), signed, 0755)
 
 	// write the content to a temp file
-	tmpContentFile, err := ioutil.TempFile("", "pkcs7Content")
+	tmpContentFile, err := os.CreateTemp("", "pkcs7Content")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpContentFile.Name()) // clean up
-	ioutil.WriteFile(tmpContentFile.Name(), content, 0755)
+	os.WriteFile(tmpContentFile.Name(), content, 0755)
 
 	// call openssl to verify the signature on the content using the root
 	opensslCMD := exec.Command("openssl", "smime", "-verify",
